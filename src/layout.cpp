@@ -193,6 +193,7 @@ HSFrame* lookup_frame(HSFrame* root, const char *index) {
     switch (index[0]) {
         case '0': new_root = layout->a; break;
         case '1': new_root = layout->b; break;
+        case '+': new_root = new_root->parent ? new_root->parent : new_root;
         /* opposite selection */
         case '/': new_root = (layout->selection == 0)
                             ?  layout->b
