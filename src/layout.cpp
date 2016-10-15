@@ -1871,9 +1871,17 @@ int frame_remove_command(int argc, char** argv) {
     // get all wins from first child
     frame_destroy(first, &wins, &count);
     // and insert them to other child.. inefficiently
+
+    bool reinsert = true;
+    if (argc >= 1 && !strcmp(argv[0], "--no-reinsert")) {
+        reinsert = false;
+    }
+
     int i;
-    for (i = 0; i < count; i++) {
-        frame_insert_client(second, wins[i]);
+    if(reinsert) {
+        for (i = 0; i < count; i++) {
+            frame_insert_client(second, wins[i]);
+        }
     }
     g_free(wins);
     XDestroyWindow(g_display, parent->window);
