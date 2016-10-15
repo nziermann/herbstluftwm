@@ -293,9 +293,11 @@ int load_command(int argc, char** argv, GString* output) {
         return HERBST_NEED_MORE_ARGS;
     }
     char* layout_string = argv[1];
+    const char* frame_string = "";
     if (argc >= 3) {
         tag = find_tag(argv[1]);
-        layout_string = argv[2];
+        frame_string = argc >= 4 ? argv[2] : "";
+        layout_string = argc >= 4 ? argv[3] : argv[2];
         if (!tag) {
             g_string_append_printf(output,
                 "%s: Tag \"%s\" not found\n", argv[0], argv[1]);
@@ -306,7 +308,9 @@ int load_command(int argc, char** argv, GString* output) {
         tag = m->tag;
     }
     assert(tag != NULL);
-    char* rest = load_frame_tree(tag->frame, layout_string, output);
+    HSFrame* frame = lookup_frame(tag->frame, frame_string);;
+    assert(frame != NULL);
+    char* rest = load_frame_tree(frame, layout_string, output);
     if (output->len > 0) {
         g_string_prepend(output, "load: ");
     }

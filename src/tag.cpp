@@ -473,12 +473,13 @@ int tag_move_window_command(int argc, char** argv, GString* output) {
         return HERBST_NEED_MORE_ARGS;
     }
     HSTag* target = find_tag(argv[1]);
+    HSFrame* frame = lookup_frame(target->frame, argc >= 3 ? argv[2] : "");
     if (!target) {
         g_string_append_printf(output,
             "%s: Tag \"%s\" not found\n", argv[0], argv[1]);
         return HERBST_INVALID_ARGUMENT;
     }
-    tag_move_focused_client(target);
+    tag_move_focused_client(target, frame);
     return 0;
 }
 
@@ -487,29 +488,45 @@ int tag_move_window_by_index_command(int argc, char** argv, GString* output) {
         return HERBST_NEED_MORE_ARGS;
     }
     bool skip_visible = false;
-    if (argc >= 3 && !strcmp(argv[2], "--skip-visible")) {
+    const char* frame_string = "";
+    if (argc >= 4 && !strcmp(argv[3], "--skip-visible")) {
+        skip_visible = true;
+        frame_string = argv[2];
+    } else if (argc >= 3 && !strcmp(argv[2], "--skip-visible")) {
         skip_visible = true;
     }
+    else if (argc >= 3) {
+        frame_string = argv[2];
+    }
     HSTag* tag = get_tag_by_index_str(argv[1], skip_visible);
+    HSFrame* frame = lookup_frame(tag->frame, frame_string);
     if (!tag) {
         g_string_append_printf(output,
             "%s: Invalid index \"%s\"\n", argv[0], argv[1]);
         return HERBST_INVALID_ARGUMENT;
     }
-    tag_move_focused_client(tag);
+    tag_move_focused_client(tag, frame);
     return 0;
 }
 
 void tag_move_focused_client(HSTag* target) {
+    tag_move_focused_client(target, target->frame);
+}
+
+void tag_move_focused_client(HSTag* target, HSFrame* frame) {
     HSClient* client = frame_focused_client(get_current_monitor()->tag->frame);
     if (client == 0) {
         // nothing to do
         return;
     }
-    tag_move_client(client, target);
+    tag_move_client(client, target, frame);
 }
 
 void tag_move_client(HSClient* client, HSTag* target) {
+    tag_move_client(client, target, target->frame);
+}
+
+void tag_move_client(HSClient* client, HSTag* target, HSFrame* frame) {
     HSTag* tag_source = client->tag;
     HSMonitor* monitor_source = find_monitor_with_tag(tag_source);
     if (tag_source == target) {
@@ -519,7 +536,7 @@ void tag_move_client(HSClient* client, HSTag* target) {
     HSMonitor* monitor_target = find_monitor_with_tag(target);
     frame_remove_client(tag_source->frame, client);
     // insert window into target
-    frame_insert_client(target->frame, client);
+    frame_insert_client(frame, client);
     // enfoce it to be focused on the target tag
     frame_focus_client(target->frame, client);
     stack_remove_slice(client->tag->stack, client->slice);
